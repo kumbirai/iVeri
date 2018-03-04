@@ -1,0 +1,118 @@
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.*;
+
+public class POITestRB {
+
+    static String excelFileOrig = "C:/Test/1.xlsm";
+    static String excelFileNew = "C:/Test/excelFileNew.xlsm";
+    static FileInputStream fis;
+    static XSSFWorkbook workbook;
+
+    public static void main(String[] args) throws IOException {
+
+        fis = new FileInputStream(excelFileOrig);
+        workbook = new XSSFWorkbook(fis);
+        gettingCellContents(workbook, "D5");
+        updateCell(workbook, 10.0);
+        fis.close();
+        workbook.close();
+
+        fis = new FileInputStream(excelFileNew);
+        workbook = new XSSFWorkbook(fis);
+        gettingCellContents(workbook, "D5");
+        fis.close();
+        workbook.close();
+
+    }
+
+
+    private static void gettingCellContents(XSSFWorkbook workbook, String cellId) {
+
+        workbook.setForceFormulaRecalculation(true);
+
+        XSSFSheet sheet = workbook.getSheetAt(1);
+        CellReference ref = new CellReference(cellId);
+        int row = ref.getRow();
+        int col = ref.getCol();
+        Cell cell = sheet.getRow(row).getCell(col);
+
+        switch (cell.getCellTypeEnum()) {
+            case STRING:
+                System.out.println(cell.getRichStringCellValue().getString());
+                break;
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    System.out.println(cell.getDateCellValue());
+                } else {
+                    System.out.println(cell.getNumericCellValue());
+                }
+                break;
+            case BOOLEAN:
+                System.out.println(cell.getBooleanCellValue());
+                break;
+            case FORMULA:
+                System.out.println("Formula is: " + cell.getCellFormula());
+                System.out.println("cell.getCachedFormulaResultType(): " + cell.getCachedFormulaResultType());
+
+                switch(cell.getCachedFormulaResultType()) {
+                    case Cell.CELL_TYPE_NUMERIC:
+                        System.out.println("0. case Cell.CELL_TYPE_NUMERIC --> Last evaluated as: " + cell.getNumericCellValue());
+                        break;
+                    case Cell.CELL_TYPE_STRING:
+                        System.out.println("4. case Cell.CELL_TYPE_STRING --> Last evaluated as \"" + cell.getRichStringCellValue() + "\"");
+                        break;
+                    case Cell.CELL_TYPE_ERROR:
+                        System.out.println("5. case Cell.CELL_TYPE_ERROR --> ");
+                        break;
+                }
+                break;
+            case BLANK:
+                System.out.println();
+                break;
+            default:
+                System.out.println("default");
+        }
+    }
+
+    public static void updateCell(XSSFWorkbook workbook, Double newData) {
+        try {
+            XSSFSheet sheet = workbook.getSheetAt(1);
+            CellReference ref = new CellReference("C8");
+            int row = ref.getRow();
+            int col = ref.getCol();
+            Cell cell = sheet.getRow(row).getCell(col);
+            if (cell != null) {
+                cell.setCellValue(newData);
+            }
+
+            workbook.getCreationHelper().createFormulaEvaluator().clearAllCachedResultValues();
+            workbook.getCreationHelper().createFormulaEvaluator().evaluateAll();
+
+            OutputStream os = new FileOutputStream(excelFileNew);
+            workbook.write(os);
+            os.flush();
+            os.close();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+}
+
+// output:
+// Formula is: C34
+// cell.getCachedFormulaResultType(): 0
+// 0. case Cell.CELL_TYPE_NUMERIC --> Last evaluated as: 407.2521754511886
+// Formula is: C34
+// cell.getCachedFormulaResultType(): 5
+// 5. case Cell.CELL_TYPE_ERROR --> 
+
+
+XSSFPivotTable pivotTable = pivotSheet.getPivotTables().get(0);     
+pivotTable.getPivotCacheDefinition().getCTPivotCacheDefinition().setRefreshOnLoad(true);

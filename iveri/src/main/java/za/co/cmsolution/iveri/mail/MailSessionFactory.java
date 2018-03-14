@@ -53,37 +53,18 @@ public class MailSessionFactory
 	 */
 	public static Session getMailSession(Properties props)
 	{
-		String sessionType = props.getProperty("sessionType");
-		if ("SIMPLE".equalsIgnoreCase(sessionType))
+		if (session == null)
 		{
-			if (session == null)
+			boolean authenticate = Boolean.parseBoolean(props.getProperty("mail.smtp.auth"));
+			Authenticator auth = null;
+			if (authenticate)
 			{
-				session = Session.getInstance(props, null);
-				LOGGER.info(String.format("SIMPLE Session - %s", session));
+				auth = getAuthenticator(props);
 			}
-			return session;
+			session = Session.getInstance(props, auth);
+			LOGGER.info(String.format("Created Mail Session - %s", session));
 		}
-		if ("TLS".equalsIgnoreCase(sessionType))
-		{
-			if (session == null)
-			{
-				Authenticator auth = getAuthenticator(props);
-				session = Session.getInstance(props, auth);
-				LOGGER.info(String.format("TLS Session - %s", session));
-			}
-			return session;
-		}
-		if ("SSL".equalsIgnoreCase(sessionType))
-		{
-			if (session == null)
-			{
-				Authenticator auth = getAuthenticator(props);
-				session = Session.getInstance(props, auth);
-				LOGGER.info(String.format("SSL Session - %s", session));
-			}
-			return session;
-		}
-		throw new MailException("MailSession cannot be determined");
+		return session;
 	}
 
 	/**

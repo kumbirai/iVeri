@@ -64,16 +64,15 @@ public class Emailer
 		String emails = props.getProperty(filename);
 		if (!"".equals(emails) && emails != null)
 		{
-			String[] emailAry = emails.split(",");
-			List<String> toEmail = Arrays.asList(emailAry);
-			Session session = IveriMailSessionFactory.getMailSession(props);
+			List<String> toEmail = Arrays.asList(emails.split(","));
+			Session session = MailSessionFactory.getMailSession(props);
 			String subject = String.format("BI Report: %s", filename);
 			String body = constructBody();
 			EmailUtil.sendAttachmentEmail(session, toEmail, subject, body, attachment, filename);
 		}
 		else
 		{
-			LOGGER.info(String.format("%s not sent", filename));
+			LOGGER.error(String.format("%s not sent. No email address defined.", filename));
 		}
 	}
 
@@ -87,10 +86,8 @@ public class Emailer
 	private String constructBody()
 	{
 		DateFormat dateFormat = new SimpleDateFormat("EEEE, d MMMM yyyy");
-		return String.format(
-				"<h1 style=\"background-color:whitesmoke;\">BI Report</h1>\r\n" + "<p style=\"color:Night;\">Hi</p>\r\n"
-						+ "<p style=\"color:Night;\">Please find BI Report attached (%s).</p>\r\n"
-						+ "<div style=\"color:darkslateblue;\"><b>Filename:</b> %s</div>\r\n" + "<p style=\"color:Night;\">Powered by CM Solutions</p>",
-				dateFormat.format(new Date()), this.filename);
+		return String.format("<h1 style=\"background-color:whitesmoke;\">BI Report</h1>\r\n"
+				+ "<p style=\"color:Night;\">Please find BI Report attached (%s).</p>\r\n" + "<div style=\"color:darkslateblue;\"><b>Filename:</b> %s</div>\r\n"
+				+ "<hr>\r\n" + "<p style=\"color:Night;\">Powered by CM Solutions</p>", dateFormat.format(new Date()), this.filename);
 	}
 }

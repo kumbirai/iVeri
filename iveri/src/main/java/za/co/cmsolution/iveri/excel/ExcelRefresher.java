@@ -18,9 +18,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.apache.poi.xssf.streaming.SXSSFFormulaEvaluator;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFFormulaEvaluator;
 
 import za.co.cmsolution.iveri.file.FileUtils;
 
@@ -42,35 +40,34 @@ public class ExcelRefresher
 {
 	private static final Logger LOGGER = LogManager.getLogger(ExcelRefresher.class.getName());
 	private Properties props;
-	private Path file;
+	private Path path;
 
 	/**
-	 * Constructor:
-	 * @param file 
-	 * @throws IOException 
+	 * Constructor: @param props
+	 * Constructor: @param path
 	 */
-	public ExcelRefresher(Properties props, Path file)
+	public ExcelRefresher(Properties props, Path path)
 	{
 		super();
 		this.props = props;
-		this.file = file;
+		this.path = path;
 	}
 
 	/**
 	 * Purpose:
 	 * <br>
 	 * refresh<br>
-	 * <br><br>
+	 * <br>
+	 * @throws IOException<br>
 	 */
 	public void refresh() throws IOException
 	{
-		try (SXSSFWorkbook workbook = new SXSSFWorkbook((XSSFWorkbook) WorkbookFactory.create(file.toFile())))
+		try (Workbook workbook = WorkbookFactory.create(path.toFile()))
 		{
 			workbook.getCreationHelper().createFormulaEvaluator().clearAllCachedResultValues();
 			workbook.getCreationHelper().createFormulaEvaluator().evaluateAll();
 
-			// XSSFFormulaEvaluator.evaluateAllFormulaCells(workbook)
-			SXSSFFormulaEvaluator.evaluateAllFormulaCells(workbook, true);
+			XSSFFormulaEvaluator.evaluateAllFormulaCells(workbook);
 
 			writeWorkbook(workbook);
 		}
@@ -91,10 +88,10 @@ public class ExcelRefresher
 	private void writeWorkbook(Workbook workbook) throws IOException
 	{
 		String reportDirectory = props.getProperty("reportDirectory");
-		File outFile = FileUtils.getFile(reportDirectory, file.getFileName().toString(), true);
+		File outFile = FileUtils.getFile(reportDirectory, path.getFileName().toString(), true);
 		try (OutputStream os = new FileOutputStream(outFile))
 		{
-			LOGGER.info(String.format("Writing file : %s", outFile.getAbsolutePath()));
+			LOGGER.info(String.format("Writing path : %s", outFile.getAbsolutePath()));
 			workbook.write(os);
 		}
 		catch (Exception ex)

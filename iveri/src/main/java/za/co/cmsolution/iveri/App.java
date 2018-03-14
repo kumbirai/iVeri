@@ -29,10 +29,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import za.co.cmsolution.iveri.file.EmailerFileVisitor;
-import za.co.cmsolution.iveri.file.ExcelRefreshFileVisitor;
 import za.co.cmsolution.iveri.file.FileUtils;
 import za.co.cmsolution.iveri.mail.EmailUtil;
-import za.co.cmsolution.iveri.mail.IveriMailSessionFactory;
+import za.co.cmsolution.iveri.mail.MailSessionFactory;
 import za.co.cmsolution.iveri.utils.StringUtils;
 
 /**
@@ -74,9 +73,6 @@ public class App
 			LOGGER.error(IO_EXCEPTION, ex);
 		}
 	}
-	// private String[] emailAry = new String[] { "java@kumbirai.co.za", "olga@iveri.com" };
-	private String[] emailAry = new String[]
-	{ "java@kumbirai.co.za" };
 
 	/**
 	 * Constructor:
@@ -96,12 +92,7 @@ public class App
 	 */
 	public static void main(String[] args) throws InterruptedException
 	{
-		long startTime = System.currentTimeMillis();
-		App app = new App();
-		LOGGER.info(String.format("Starting application %s", new Date(startTime)));
-		app.process();
-		long endTime = System.currentTimeMillis();
-		LOGGER.info(String.format("Processing complete. It took %s", StringUtils.stringTime(endTime - startTime)));
+		new App().process();
 	}
 
 	/**
@@ -111,8 +102,11 @@ public class App
 	 * <br><br>
 	 * @throws InterruptedException
 	 */
-	private void process() throws InterruptedException
+	public void process() throws InterruptedException
 	{
+		long startTime = System.currentTimeMillis();
+		LOGGER.info(String.format("Starting application %s", new Date(startTime)));
+		emailStartJob(startTime);
 		refreshExcelFiles();
 
 		String reportDirectory = props.getProperty("reportDirectory");
@@ -120,6 +114,8 @@ public class App
 		LOGGER.info(String.format("Emailing reports in %s", reportDirectory));
 		LOGGER.info(LOG_SEPARATOR);
 		walkFileTree(reportDirectory, new EmailerFileVisitor(props));
+		long endTime = System.currentTimeMillis();
+		LOGGER.info(String.format("Processing complete. It took %s", StringUtils.stringTime(endTime - startTime)));
 		emailLogFile();
 	}
 
@@ -157,10 +153,10 @@ public class App
 			Long runTime = Long.valueOf(refreshRunTime);
 			Thread.sleep(runTime * 60 * 1000);
 
-			LOGGER.info(LOG_SEPARATOR);
-			LOGGER.info(String.format("Refreshing excel files in %s", excelDirectory));
-			LOGGER.info(LOG_SEPARATOR);
-			walkFileTree(excelDirectory, new ExcelRefreshFileVisitor(props));
+			// LOGGER.info(LOG_SEPARATOR)
+			// LOGGER.info(String.format("Refreshing excel files in %s", excelDirectory))
+			// LOGGER.info(LOG_SEPARATOR)
+			// walkFileTree(excelDirectory, new ExcelRefreshFileVisitor(props))
 		}
 	}
 
@@ -189,20 +185,69 @@ public class App
 	/**
 	 * Purpose:
 	 * <br>
+	 * emailStartJob<br>
+	 * <br><br>
+	 * @param startTime 
+	 */
+	private void emailStartJob(long startTime)
+	{
+		String emails = props.getProperty("logEmails");
+		if (!"".equals(emails) && emails != null)
+		{
+			List<String> toEmail = Arrays.asList(emails.split(","));
+			Session session = MailSessionFactory.getMailSession(props);
+			String subject = "BI Report: Refresh job started";
+			String body = constructStartJobEmailBody(startTime);
+			EmailUtil.sendEmail(session, toEmail, subject, body);
+		}
+		else
+		{
+			LOGGER.error("Property 'logEmails' not defined. No logging email sent.");
+		}
+	}
+
+	/**
+	 * Purpose:
+	 * <br>
+	 * constructStartJobEmailBody<br>
+	 * <br>
+	 * @param startTime 
+	 * @return<br>
+	 */
+	private String constructStartJobEmailBody(long startTime)
+	{
+		DateFormat dateFormat = new SimpleDateFormat("EEEE, d MMMM yyyy HH:mm:ss");
+		return String.format(
+				"<h1 style=\"background-color:whitesmoke;\">BI Report</h1>\r\n" + "<p style=\"color:Night;\">BI Report refresh job has started %s.</p>\r\n"
+						+ "<hr>\r\n" + "<p style=\"color:Night;\">Powered by CM Solutions</p>",
+				dateFormat.format(new Date(startTime)));
+	}
+
+	/**
+	 * Purpose:
+	 * <br>
 	 * emailLogFile<br>
 	 * <br><br>
 	 * @throws InterruptedException
 	 */
 	private void emailLogFile()
 	{
-		String filename = "application.log";
-		File logFile = FileUtils.getFile("./logs", filename, true);
-		String attachment = logFile.getAbsolutePath();
-		List<String> toEmail = Arrays.asList(emailAry);
-		Session session = IveriMailSessionFactory.getMailSession(props);
-		String subject = String.format("BI Report: %s", filename);
-		String body = constructLogEmailBody(filename);
-		EmailUtil.sendAttachmentEmail(session, toEmail, subject, body, attachment, filename);
+		String emails = props.getProperty("logEmails");
+		if (!"".equals(emails) && emails != null)
+		{
+			List<String> toEmail = Arrays.asList(emails.split(","));
+			String filename = "application.log";
+			File logFile = FileUtils.getFile("./logs", filename, true);
+			String attachment = logFile.getAbsolutePath();
+			Session session = MailSessionFactory.getMailSession(props);
+			String subject = String.format("BI Report: %s", filename);
+			String body = constructLogEmailBody(filename);
+			EmailUtil.sendAttachmentEmail(session, toEmail, subject, body, attachment, filename);
+		}
+		else
+		{
+			LOGGER.error("Property 'logEmails' not defined. No logging email sent.");
+		}
 	}
 
 	/**
@@ -216,10 +261,8 @@ public class App
 	private String constructLogEmailBody(String filename)
 	{
 		DateFormat dateFormat = new SimpleDateFormat("EEEE, d MMMM yyyy");
-		return String.format(
-				"<h1 style=\"background-color:whitesmoke;\">BI Report</h1>\r\n" + "<p style=\"color:Night;\">Hi</p>\r\n"
-						+ "<p style=\"color:Night;\">Please find BI Report attached (%s).</p>\r\n"
-						+ "<div style=\"color:darkslateblue;\"><b>Filename:</b> %s</div>\r\n" + "<p style=\"color:Night;\">Powered by CM Solutions</p>",
-				dateFormat.format(new Date()), filename);
+		return String.format("<h1 style=\"background-color:whitesmoke;\">BI Report</h1>\r\n"
+				+ "<p style=\"color:Night;\">Please find BI Report attached (%s).</p>\r\n" + "<div style=\"color:darkslateblue;\"><b>Filename:</b> %s</div>\r\n"
+				+ "<hr>\r\n" + "<p style=\"color:Night;\">Powered by CM Solutions</p>", dateFormat.format(new Date()), filename);
 	}
 }

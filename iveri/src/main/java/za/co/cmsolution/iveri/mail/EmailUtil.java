@@ -62,6 +62,42 @@ public class EmailUtil
 	/**
 	 * Purpose:
 	 * <br>
+	 * sendEmail<br>
+	 * <br>
+	 * @param session
+	 * @param toEmail
+	 * @param subject
+	 * @param body<br>
+	 */
+	public static void sendEmail(Session session, List<String> toEmail, String subject, String body)
+	{
+		try
+		{
+			MimeMessage msg = createMimeMessage(session, toEmail, subject);
+
+			msg.setContent(body, TEXT_HTML);
+
+			LOGGER.debug("Message is ready");
+			Transport.send(msg);
+			LOGGER.debug("EMail Sent Successfully!!");
+		}
+		catch (AddressException ex)
+		{
+			LOGGER.error(ADDRESS_EXCEPTION_HAS_BEEN_CAUGHT, ex);
+		}
+		catch (UnsupportedEncodingException ex)
+		{
+			LOGGER.error(UNSUPPORTED_ENCODING_EXCEPTION_HAS_BEEN_CAUGHT, ex);
+		}
+		catch (MessagingException ex)
+		{
+			LOGGER.error(MESSAGING_EXCEPTION_HAS_BEEN_CAUGHT, ex);
+		}
+	}
+
+	/**
+	 * Purpose:
+	 * <br>
 	 * sendAttachmentEmail<br>
 	 * <br>
 	 * @param session

@@ -65,9 +65,9 @@ public class ExcelRefreshFileVisitor implements FileVisitor<Path>
 	@Override
 	public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
 	{
-		Path fileName = file.getFileName();
+		Path filePath = file.getFileName();
 		String absoluteFileName = file.toFile().getPath();
-		LOGGER.info(String.format("FILE NAME: %s - PATH: %S", fileName, absoluteFileName));
+		LOGGER.info(String.format("FILE NAME: %s - PATH: %S", filePath, absoluteFileName));
 		ExcelRefresher refresher = new ExcelRefresher(props, file);
 		try
 		{

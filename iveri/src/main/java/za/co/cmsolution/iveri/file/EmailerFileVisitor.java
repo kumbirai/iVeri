@@ -73,10 +73,10 @@ public class EmailerFileVisitor implements FileVisitor<Path>
 	@Override
 	public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
 	{
-		Path fileName = file.getFileName();
+		Path filePath = file.getFileName();
 		String absoluteFileName = file.toFile().getPath();
-		LOGGER.info(String.format("FILE NAME: %s - PATH: %S", fileName, absoluteFileName));
-		Emailer emailer = new Emailer(props, fileName.toString(), absoluteFileName);
+		LOGGER.info(String.format("FILE NAME: %s - PATH: %S", filePath, absoluteFileName));
+		Emailer emailer = new Emailer(props, filePath.toString(), absoluteFileName);
 		emailer.send();
 		return FileVisitResult.CONTINUE;
 	}
